@@ -1,6 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
-NUM_NODE = 2
+NUM_NODE = 3
 KUBEADM_POD_NETWORK_CIDR = "10.244.0.0/16"
 KUBEADM_TOKEN = "29c663.4e1b73743dfdcaf1"
 KUBEADM_TOKEN_TTL = 0
@@ -68,9 +68,8 @@ Vagrant.configure("2") do |config|
   #
   # View the documentation for the provider you are using for more
   # information on available options.
-
-  config.vm.provision "docker", type: "shell", :path => "install-docker.sh"
-  config.vm.provision "kubeadm", type: "shell", :path => "install-kubeadm.sh"
+  config.vm.provision "install-docker", type: "shell", :path => "install-docker.sh"
+  config.vm.provision "install-kubeadm", type: "shell", :path => "install-kubeadm.sh"
 
   config.vm.define "master" do |master|
     master.vm.hostname = "master"
