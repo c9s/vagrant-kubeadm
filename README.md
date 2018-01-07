@@ -1,8 +1,30 @@
+# Kubeadm-ready Vagrant
 
+## Setting up
 
 ```
 vagrant plugin install vagrant-hostmanger
+```
+
+### Vagrant Up
+
+```
+vagrant up
+```
+
+### Vagrant Up Nodes separately
+
+```
 vagrant up master
+vagrant up node-1
+vagrant up node-1
+```
+
+### Connecting to the nodes
+
+```
+vagrant ssh master
+vagrant ssh node-1
 ```
 
 
