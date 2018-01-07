@@ -68,8 +68,8 @@ Vagrant.configure("2") do |config|
   #
   # View the documentation for the provider you are using for more
   # information on available options.
-  config.vm.provision "install-docker", type: "shell", :path => "install-docker.sh"
-  config.vm.provision "install-kubeadm", type: "shell", :path => "install-kubeadm.sh"
+  config.vm.provision "install-docker", type: "shell", :path => "ubuntu/install-docker.sh"
+  config.vm.provision "install-kubeadm", type: "shell", :path => "ubuntu/install-kubeadm.sh"
 
   config.vm.define "master" do |master|
     master.vm.hostname = "master"
@@ -81,7 +81,9 @@ Vagrant.configure("2") do |config|
             --pod-network-cidr=#{KUBEADM_POD_NETWORK_CIDR} \
             --token #{KUBEADM_TOKEN} --token-ttl #{KUBEADM_TOKEN_TTL}
     SHELL
+
     master.vm.provision "install-kubeconfig", :type => "shell", :path => "vagrant/install-kubeconfig.sh"
+    master.vm.provision "allow-bridge-nf-traffic", :type => "shell", :path => "ubuntu/allow-bridge-nf-traffic.sh"
     master.vm.provision "install-flannel", :type => "shell", :path => "vagrant/install-flannel.sh"
   end
 
@@ -90,9 +92,9 @@ Vagrant.configure("2") do |config|
         node.vm.hostname = "node-#{i}"
         node.vm.network :private_network, ip: NODE_IP_NW + "#{10 + i}"
 
+        node.vm.provision "allow-bridge-nf-traffic", :type => "shell", :path => "ubuntu/allow-bridge-nf-traffic.sh"
         # --discovery-token-unsafe-skip-ca-verification might be required for custom generated token
         node.vm.provision "shell", inline: <<-SHELL
-        sysctl net.bridge.bridge-nf-call-iptables=1
         kubeadm join --token #{KUBEADM_TOKEN} #{MASTER_IP}:6443 --discovery-token-unsafe-skip-ca-verification
         SHELL
     end
