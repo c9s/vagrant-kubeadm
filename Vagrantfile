@@ -1,6 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
-NUM_NODE = 3
+NUM_NODE = 2
 KUBEADM_POD_NETWORK_CIDR = "10.244.0.0/16"
 KUBEADM_TOKEN = "29c663.4e1b73743dfdcaf1"
 KUBEADM_TOKEN_TTL = 0
@@ -77,14 +77,12 @@ Vagrant.configure("2") do |config|
 
     master.vm.provision "shell", inline: <<-SHELL
         kubeadm init \
-                --apiserver-advertise-address=#{MASTER_IP} \
-                --pod-network-cidr=#{KUBEADM_POD_NETWORK_CIDR} \
-                --token #{KUBEADM_TOKEN} --token-ttl #{KUBEADM_TOKEN_TTL}
-        mkdir -p $HOME/.kube
-        sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-        sudo chown $(id -u):$(id -g) $HOME/.kube/config
-        curl --silent https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml | kubectl apply -f -
+            --apiserver-advertise-address=#{MASTER_IP} \
+            --pod-network-cidr=#{KUBEADM_POD_NETWORK_CIDR} \
+            --token #{KUBEADM_TOKEN} --token-ttl #{KUBEADM_TOKEN_TTL}
     SHELL
+    master.vm.provision "install-kubeconfig", :type => "shell", :path => "vagrant/install-kubeconfig.sh"
+    master.vm.provision "install-flannel", :type => "shell", :path => "vagrant/install-flannel.sh"
   end
 
   (1..NUM_NODE).each do |i|
@@ -94,6 +92,7 @@ Vagrant.configure("2") do |config|
 
         # --discovery-token-unsafe-skip-ca-verification might be required for custom generated token
         node.vm.provision "shell", inline: <<-SHELL
+        sysctl net.bridge.bridge-nf-call-iptables=1
         kubeadm join --token #{KUBEADM_TOKEN} #{MASTER_IP}:6443 --discovery-token-unsafe-skip-ca-verification
         SHELL
     end
