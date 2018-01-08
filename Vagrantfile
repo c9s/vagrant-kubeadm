@@ -80,9 +80,11 @@ Vagrant.configure("2") do |config|
     node.vm.hostname = "master"
     node.vm.network :private_network, ip: MASTER_IP
 
+    node.vm.provision "setup-hosts", :type => "shell", :path => "vagrant/setup-hosts.sh" do |s|
+      s.args = ["enp0s8"]
+    end
+
     node.vm.provision "shell", inline: <<-SHELL
-        ADDRESS="$(ip -4 addr show enp0s8 | grep "inet" | head -1 |awk '{print $2}' | cut -d/ -f1)"
-        sudo sed -e "s/^.*#{node.vm.hostname}.*/${ADDRESS} #{node.vm.hostname} #{node.vm.hostname}.local/" -i /etc/hosts
         kubeadm init \
             --apiserver-advertise-address=#{MASTER_IP} \
             --pod-network-cidr=#{KUBEADM_POD_NETWORK_CIDR} \
@@ -100,6 +102,11 @@ Vagrant.configure("2") do |config|
         node.vm.network :private_network, ip: NODE_IP_NW + "#{10 + i}"
 
         node.vm.provision "allow-bridge-nf-traffic", :type => "shell", :path => "ubuntu/allow-bridge-nf-traffic.sh"
+
+        node.vm.provision "setup-hosts", :type => "shell", :path => "vagrant/setup-hosts.sh" do |s|
+          s.args = ["enp0s8"]
+        end
+
         # --discovery-token-unsafe-skip-ca-verification might be required for custom generated token
         node.vm.provision "shell", inline: <<-SHELL
         ADDRESS="$(ip -4 addr show enp0s8 | grep "inet" | head -1 |awk '{print $2}' | cut -d/ -f1)"
