@@ -71,6 +71,11 @@ Vagrant.configure("2") do |config|
   config.vm.provision "install-docker", type: "shell", :path => "ubuntu/install-docker.sh"
   config.vm.provision "install-kubeadm", type: "shell", :path => "ubuntu/install-kubeadm.sh"
 
+  config.vm.define "base" do |base|
+    base.vm.hostname = "master"
+    base.vm.provision "install-kubeconfig", :type => "shell", :path => "vagrant/install-guest-additions.sh"
+  end
+
   config.vm.define "master" do |master|
     master.vm.hostname = "master"
     master.vm.network :private_network, ip: MASTER_IP
