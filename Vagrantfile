@@ -76,20 +76,22 @@ Vagrant.configure("2") do |config|
     base.vm.provision "install-kubeconfig", :type => "shell", :path => "vagrant/install-guest-additions.sh"
   end
 
-  config.vm.define "master" do |master|
-    master.vm.hostname = "master"
-    master.vm.network :private_network, ip: MASTER_IP
+  config.vm.define "master" do |node|
+    node.vm.hostname = "master"
+    node.vm.network :private_network, ip: MASTER_IP
 
-    master.vm.provision "shell", inline: <<-SHELL
+    node.vm.provision "shell", inline: <<-SHELL
+        ADDRESS="$(ip -4 addr show enp0s8 | grep "inet" | head -1 |awk '{print $2}' | cut -d/ -f1)"
+        sudo sed -e "s/^.*#{node.vm.hostname}.*/${ADDRESS} #{node.vm.hostname} #{node.vm.hostname}.local/" -i /etc/hosts
         kubeadm init \
             --apiserver-advertise-address=#{MASTER_IP} \
             --pod-network-cidr=#{KUBEADM_POD_NETWORK_CIDR} \
             --token #{KUBEADM_TOKEN} --token-ttl #{KUBEADM_TOKEN_TTL}
     SHELL
 
-    master.vm.provision "install-kubeconfig", :type => "shell", :path => "vagrant/install-kubeconfig.sh"
-    master.vm.provision "allow-bridge-nf-traffic", :type => "shell", :path => "ubuntu/allow-bridge-nf-traffic.sh"
-    master.vm.provision "install-flannel", :type => "shell", :path => "vagrant/install-flannel.sh"
+    node.vm.provision "install-kubeconfig", :type => "shell", :path => "vagrant/install-kubeconfig.sh"
+    node.vm.provision "allow-bridge-nf-traffic", :type => "shell", :path => "ubuntu/allow-bridge-nf-traffic.sh"
+    node.vm.provision "install-flannel", :type => "shell", :path => "vagrant/install-flannel.sh"
   end
 
   (1..NUM_NODE).each do |i|
@@ -100,6 +102,9 @@ Vagrant.configure("2") do |config|
         node.vm.provision "allow-bridge-nf-traffic", :type => "shell", :path => "ubuntu/allow-bridge-nf-traffic.sh"
         # --discovery-token-unsafe-skip-ca-verification might be required for custom generated token
         node.vm.provision "shell", inline: <<-SHELL
+        ADDRESS="$(ip -4 addr show enp0s8 | grep "inet" | head -1 |awk '{print $2}' | cut -d/ -f1)"
+        sudo sed -e "s/^.*#{node.vm.hostname}.*/${ADDRESS} #{node.vm.hostname} #{node.vm.hostname}.local/" -i /etc/hosts
+
         kubeadm join --token #{KUBEADM_TOKEN} #{MASTER_IP}:6443 --discovery-token-unsafe-skip-ca-verification
         SHELL
     end
