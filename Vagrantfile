@@ -70,20 +70,20 @@ Vagrant.configure("2") do |config|
   # information on available options.
   config.vm.provision "install-docker", type: "shell", :path => "ubuntu/install-docker.sh"
   config.vm.provision "install-kubeadm", type: "shell", :path => "ubuntu/install-kubeadm.sh"
-  config.vm.provision "setup-hosts", :type => "shell", :path => "vagrant/setup-hosts.sh" do |s|
+  config.vm.provision "setup-hosts", :type => "shell", :path => "ubuntu/vagrant/setup-hosts.sh" do |s|
     s.args = ["enp0s8"]
   end
 
   config.vm.define "base" do |base|
     base.vm.hostname = "master"
-    base.vm.provision "install-kubeconfig", :type => "shell", :path => "vagrant/install-guest-additions.sh"
+    base.vm.provision "install-kubeconfig", :type => "shell", :path => "ubuntu/vagrant/install-guest-additions.sh"
   end
 
   config.vm.define "master" do |node|
     node.vm.hostname = "master"
     node.vm.network :private_network, ip: MASTER_IP
 
-    node.vm.provision "setup-hosts", :type => "shell", :path => "vagrant/setup-hosts.sh" do |s|
+    node.vm.provision "setup-hosts", :type => "shell", :path => "ubuntu/vagrant/setup-hosts.sh" do |s|
       s.args = ["enp0s8"]
     end
 
@@ -94,9 +94,9 @@ Vagrant.configure("2") do |config|
             --token #{KUBEADM_TOKEN} --token-ttl #{KUBEADM_TOKEN_TTL}
     SHELL
 
-    node.vm.provision "install-kubeconfig", :type => "shell", :path => "vagrant/install-kubeconfig.sh"
+    node.vm.provision "install-kubeconfig", :type => "shell", :path => "ubuntu/vagrant/install-kubeconfig.sh"
     node.vm.provision "allow-bridge-nf-traffic", :type => "shell", :path => "ubuntu/allow-bridge-nf-traffic.sh"
-    node.vm.provision "install-flannel", :type => "shell", :path => "vagrant/install-flannel.sh"
+    node.vm.provision "install-flannel", :type => "shell", :path => "ubuntu/vagrant/install-flannel.sh"
   end
 
   (1..NUM_NODE).each do |i|
