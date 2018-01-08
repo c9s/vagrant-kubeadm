@@ -1,5 +1,5 @@
 # -*- mode: ruby -*-
-# vi: set ft=ruby :
+# vi:set ft=ruby sw=2 ts=2 sts=2:
 NUM_NODE = 2
 KUBEADM_POD_NETWORK_CIDR = "10.244.0.0/16"
 KUBEADM_TOKEN = "29c663.4e1b73743dfdcaf1"
@@ -70,6 +70,9 @@ Vagrant.configure("2") do |config|
   # information on available options.
   config.vm.provision "install-docker", type: "shell", :path => "ubuntu/install-docker.sh"
   config.vm.provision "install-kubeadm", type: "shell", :path => "ubuntu/install-kubeadm.sh"
+  config.vm.provision "setup-hosts", :type => "shell", :path => "vagrant/setup-hosts.sh" do |s|
+    s.args = ["enp0s8"]
+  end
 
   config.vm.define "base" do |base|
     base.vm.hostname = "master"
@@ -100,18 +103,10 @@ Vagrant.configure("2") do |config|
     config.vm.define "node-#{i}" do |node|
         node.vm.hostname = "node-#{i}"
         node.vm.network :private_network, ip: NODE_IP_NW + "#{10 + i}"
-
         node.vm.provision "allow-bridge-nf-traffic", :type => "shell", :path => "ubuntu/allow-bridge-nf-traffic.sh"
-
-        node.vm.provision "setup-hosts", :type => "shell", :path => "vagrant/setup-hosts.sh" do |s|
-          s.args = ["enp0s8"]
-        end
 
         # --discovery-token-unsafe-skip-ca-verification might be required for custom generated token
         node.vm.provision "shell", inline: <<-SHELL
-        ADDRESS="$(ip -4 addr show enp0s8 | grep "inet" | head -1 |awk '{print $2}' | cut -d/ -f1)"
-        sudo sed -e "s/^.*#{node.vm.hostname}.*/${ADDRESS} #{node.vm.hostname} #{node.vm.hostname}.local/" -i /etc/hosts
-
         kubeadm join --token #{KUBEADM_TOKEN} #{MASTER_IP}:6443 --discovery-token-unsafe-skip-ca-verification
         SHELL
     end
